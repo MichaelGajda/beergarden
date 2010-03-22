@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Beergarden (WebSockets API, Canvas 2D API, Redis and node.js)</title>
+<style type="text/css" media="screen">
+body {
+  margin: 0;
+  padding: 0;
+  font-family: HelveticaNeue, Garamond, Helvetica, 'Trebuchet MS', Georgia;
+  font-size: 20px;
+}
+
+#ze-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+#status {
+  display: block;
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  background: #fff;
+  color: #000;
+  text-decoration: none;
+  z-index: 1;
+  padding: 6px 10px;
+  opacity: 0.666;
+}
+
+a {
+  display: block;
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  z-index: 1;
+  padding: 6px 10px;
+  opacity: 0.666;
+}
+</style>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+<script type="text/javascript">
+$(document).ready(function () {
+  var socket   = new WebSocket('ws://localhost:8080/beergarden'),
+       canvas  = document.getElementById('ze-canvas'),
+       context = canvas.getContext('2d'),
+       status  = $('#status span'),
+       width   = window.innerWidth,
+       height  = window.innerHeight;
+       randval = function() { return Math.floor(Math.random() * 255); }
+       you     = {
+         id:    'stephan' + Math.random() * 31337,
+         color: function() { return 'rgb(' + [randval(), randval(), randval()].join(',') + ')'; }(),
+         x: Math.floor(Math.random() * width),
+         y: Math.floor(Math.random() * height)
+       };
+
+  $()
+
+  $(canvas).css({
+    width:  width,
+    height: height
+  }).attr({
+    width: width,
+    height: height
+  });
+
+  socket.onopen = function(e){    
+    socket.send(JSON.stringify(you));
+    
+    status.text('playing').css('background', you.color);
+  }
+
+  socket.onmessage = function (e) {
+    var people = JSON.parse(e.data);
+
+    context.clearRect(0, 0, width, height);
+
+    $.each(people, function (id, person) {
+      context.fillStyle = person.color;
+      context.fillRect(person.x, person.y, 100, 100);
+    });
+
+  }
+
+  socket.onclose = function(e) {
+
+  }
+   
+  $(document).keydown(function(e) {
+    var keyHandlers = {
+      87: function () { you.y -= 10; }, // W
+      83: function () { you.y += 10; }, // S
+      65: function () { you.x -= 10; }, // A
+      68: function () { you.x += 10; }  // D
+    };
+
+    if (keyHandlers[e.which]) {
+      keyHandlers[e.which]();
+    }
+
+    socket.send(JSON.stringify(you));
+  });
+});
+</script>
+</head>
+<body>
+<canvas id="ze-canvas"></canvas>
+<div id="status">&lt;beergarden <span>connecting</span> /&gt;</div>
+<a href="http://github.com/evilhackerdude/beergarden" target="_blank">For fork's sake!</a>
+</body>
+</html>
